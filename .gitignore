@@ -1,0 +1,36 @@
+# Ignore IDE files
+.idea/
+
+# Ignore Python cache
+__pycache__/
+
+# Ignore environment files
+.env
+*.env
+
+# Ignore Python virtual environments
+venv/
+llm-evaluation/
+bin/
+lib/
+include/
+pyvenv.cfg
+
+# Ignore pytest cache
+.pytest_cache/
+
+# Ignore all compiled Python files
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore log files and temp files
+*.log
+*.tmp
+
+# Ignore shell script outputs
+*.sh~
+
+# Ignore other user-specific files
+.DS_Store
+Thumbs.db
