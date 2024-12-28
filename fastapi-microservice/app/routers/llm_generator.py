@@ -1,3 +1,4 @@
+from typing import List
 from groq import BaseModel, Groq
 from fastapi import APIRouter
 from dotenv import load_dotenv
@@ -25,7 +26,7 @@ router = APIRouter(
     prefix="/ai",
 )
 
-@router.post("/", response_model=AIResponseBody)
+@router.post("/", response_model=List[AIResponseBody])
 async def use_LLM(requestBody: AIRequestBody):
     """Generating a request from LLM
 
