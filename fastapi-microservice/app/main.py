@@ -1,9 +1,10 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from groq import BaseModel, Groq
 import os
-from app.soney_llm_postgres import database, llm_data
-
+from app.soney_llm_postgres import database, llm_grader
+from app.routers.llm_generator import router as llm_generator_router
 
 from dotenv import load_dotenv
 
@@ -39,44 +40,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+origins = [
+    "http://localhost:5173"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
+app.include_router(llm_generator_router)
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to FastAPI microservice"}
-
-
-@app.get("/items/{item_id}/{q}")
-def read_item(item_id: int, q: str = None):
-    return {"item_id": item_id, "q": q}
-
-
-@app.post("/ai", response_model=AIRequestBody)
-async def use_LLM(requestBody: AIRequestBody):
-    """Generating a request from LLM
-
-    :param requestBody: requestBody include systemPrompt(optional) and contentPrompt(required)
-    :return: generated response from "llama3-8b-8192"
-    """
-    chat_completion = client.chat.completions.create(
-        messages=[
-            {"role": "system", "content": requestBody.systemPrompt},
-            {
-                "role": "user",
-                "content": requestBody.contentPrompt,
-            },
-        ],
-        model="llama3-8b-8192",
-        temperature=0.5,
-        max_tokens=1024,
-        top_p=1,
-        stop=None,
-        stream=False,
-    )
-    
-    query = llm_data.insert().values(contentPrompt=requestBody.contentPrompt, systemPrompt=requestBody.systemPrompt, response=chat_completion.choices[0].message.content)
-    last_response_id = await database.execute(query)
-    
-    query = llm_data.select().where(llm_data.c.id == last_response_id)
-    inserted_response = await database.fetch_one(query)
-    return inserted_response
-    
-    
