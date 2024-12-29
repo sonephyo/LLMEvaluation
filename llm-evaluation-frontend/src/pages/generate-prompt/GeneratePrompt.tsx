@@ -7,11 +7,23 @@ interface PromptInterface {
   contentPrompt: string;
 }
 
+interface ResultResponesInterface {
+  data: LLMResponse[];
+}
+
+interface LLMResponse {
+  systemPrompt: string;
+  response: string;
+  contentPrompt: string;
+  aiModel: string;
+}
+
 export const GeneratePrompt = () => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PromptInterface>({
     systemPrompt: "",
     contentPrompt: "",
   });
+  const [response, setresponse] = useState<LLMResponse[] | null>(null);
 
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { id, value } = event.target;
@@ -33,16 +45,17 @@ export const GeneratePrompt = () => {
     }
 
     axios
-      .post(`${BACKEND_URL}/ai`, formData)
+      .post(`${BACKEND_URL}/ai/`, formData)
       .then((response) => {
         console.log(response.data);
+        setresponse(response.data);
       })
       .catch((error) => {
         console.error(error);
       });
   };
   return (
-    <div className="flex justify-center">
+    <div className="flex justify-center flex-col items-center ">
       <form onSubmit={handleSubmit} className="mb-5 w-1/2">
         <div className="my-10">
           <label
@@ -79,12 +92,26 @@ export const GeneratePrompt = () => {
           Generate Response
         </button>
       </form>
-
-      <ResultResponse />
+      {response && <ResultResponse data={response} />}
     </div>
   );
 };
 
-const ResultResponse = () => {
-  return 
+const ResultResponse: React.FC<ResultResponesInterface> = (props) => {
+  return (
+    <div>
+      <h1 className="dark:text-white text-4xl m-10">Responses</h1>
+      <div className="dark:text-white flex flex-row flex-wrap justify-center gap-2">
+        {props.data.map((result, index) => (
+          <div
+            className="w-[calc(50%-0.5rem)] p-5 flex flex-col items-center"
+            key={index}
+          >
+            <h1 className=" text-3xl mb-3">{result.aiModel}</h1>
+            <p>{result.response}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 };

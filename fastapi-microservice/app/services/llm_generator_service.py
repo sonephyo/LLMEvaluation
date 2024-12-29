@@ -1,8 +1,8 @@
 from typing import List
 from groq import BaseModel, Groq
-from fastapi import APIRouter
 from dotenv import load_dotenv
 import os
+from sqlalchemy import text
 from app.soney_llm_postgres import (
     database,
     system_prompt,
@@ -10,23 +10,11 @@ from app.soney_llm_postgres import (
     llm_grader,
     ai_model,
 )
+from app.models.classes import AIRequestBody, AIResponseBody
 
 # loading variables from .env file
 load_dotenv()
 groq_key = os.getenv("GROQ_API_KEY")
-
-
-class AIRequestBody(BaseModel):
-    systemPrompt: str | None = (
-        "you are a funny person and you explain stuff in a fun way"
-    )
-    contentPrompt: str | None = {"explain suny oswego"}
-
-
-class AIResponseBody(BaseModel):
-    systemPrompt: str | None = None
-    contentPrompt: str | None = None
-    response: str | None = None
 
 
 client = Groq(
@@ -36,7 +24,7 @@ client = Groq(
 
 async def generateResponse(requestBody: AIRequestBody) -> List[AIResponseBody]:
 
-    ai_model_list = ["llama3-8b-8192", "llama-guard-3-8b"]
+    ai_model_list = ["llama3-8b-8192", "gemma2-9b-it"]
 
     responseData: List[AIResponseBody] = []
 
@@ -106,19 +94,24 @@ async def generateResponse(requestBody: AIRequestBody) -> List[AIResponseBody]:
             response=response_content,
         )
         last_response_id = await database.execute(llm_grader_insert_query)
-
-        # Fetch the inserted response
-        response_query = llm_grader.select().where(llm_grader.c.id == last_response_id)
-        inserted_response = await database.fetch_one(response_query)
-
-        responseData.append(inserted_response)
+        
+        sql = text(f"""SELECT llm_grader.*, content_prompt.*, system_prompt.*, ai_model.*
+                FROM llm_grader
+                JOIN content_prompt ON content_prompt.id = {content_prompt_id}
+                JOIN system_prompt ON system_prompt.id = {system_prompt_id}
+                JOIN ai_model ON ai_model.id = {ai_model_id}
+                WHERE llm_grader.id = {last_response_id}""")
+        inserted_response = await database.fetch_one(sql)
+        
+        dict_result = dict(inserted_response)
+        
+        responseInstance = AIResponseBody(
+            systemPrompt=dict_result.get("systemPrompt"),
+            contentPrompt=dict_result.get("contentPrompt"),
+            response=dict_result.get("response"),
+            aiModel=dict_result.get("aiModel")
+            )
+        print(responseInstance)
+        responseData.append(responseInstance)
         
     return responseData
-
-
-async def getAllResponses() -> List[AIResponseBody]:
-
-    query = llm_data.select()
-    responses = await database.fetch_all(query)
-    print(responses)
-    return [AIResponseBody(**dict(row)) for row in responses]

@@ -8,7 +8,7 @@ function App() {
     <div className="">
       <SideBar />
       <div>
-        <div className=" min-h-screen p-4 sm:ml-64 bg-center bg-no-repeat bg-[url('https://flowbite.s3.amazonaws.com/docs/jumbotron/conference.jpg')] bg-gray-700 bg-blend-multiply">
+        <div className=" min-h-screen p-4 sm:ml-64 bg-slate-900">
           <Outlet />
         </div>
       </div>
