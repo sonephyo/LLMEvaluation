@@ -5,6 +5,7 @@ from groq import BaseModel, Groq
 import os
 from app.soney_llm_postgres import database, llm_grader
 from app.routers.llm_generator import router as llm_generator_router
+from app.routers.llm_data_storage import router as llm_data_storage_router
 
 from dotenv import load_dotenv
 
@@ -41,7 +42,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 origins = [
-    "http://localhost:5173"
+    "http://localhost:5173",
+    "http://localhost:4173"
 ]
 
 app.add_middleware(
@@ -53,6 +55,7 @@ app.add_middleware(
 )
 
 app.include_router(llm_generator_router)
+app.include_router(llm_data_storage_router)
 
 @app.get("/")
 def read_root():

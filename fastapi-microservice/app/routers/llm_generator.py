@@ -1,14 +1,7 @@
 from typing import List
-from groq import BaseModel, Groq
 from fastapi import APIRouter
-from dotenv import load_dotenv
-import os
-from app.services.llm_generator_service import generateResponse
-from app.models.classes import AIRequestBody, AIResponseBody
-
-# loading variables from .env file
-load_dotenv()
-groq_key = os.getenv("GROQ_API_KEY")
+from app.services.llm_generator_service import generateResponse, getSystemPrompts
+from app.models.classes import AIRequestBody, AIResponseBody, DataSystemPromptResponseBody
 
 router = APIRouter(
     prefix="/ai",
@@ -23,3 +16,11 @@ async def use_LLM(requestBody: AIRequestBody):
     :return: generated response from "llama3-8b-8192"
     """
     return await generateResponse(requestBody)
+
+@router.get("/systemPrompts", response_model=List[DataSystemPromptResponseBody])
+async def getAllSystemPrompts():
+    """Get all systemPrompts generated
+    
+    :return: list of all System prompts
+    """
+    return await getSystemPrompts()

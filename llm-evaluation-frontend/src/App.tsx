@@ -1,5 +1,5 @@
 import "./App.css";
-import { Outlet, useNavigate, useOutlet } from "react-router-dom";
+import { useNavigate, useOutlet } from "react-router-dom";
 
 function App() {
   // const [isPopUpOpen, setisPopUpOpen] = useState<boolean>(false);

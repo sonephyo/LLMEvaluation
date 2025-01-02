@@ -10,7 +10,11 @@ from app.soney_llm_postgres import (
     llm_grader,
     ai_model,
 )
-from app.models.classes import AIRequestBody, AIResponseBody
+from app.models.classes import (
+    AIRequestBody,
+    AIResponseBody,
+    DataSystemPromptResponseBody,
+)
 
 # loading variables from .env file
 load_dotenv()
@@ -94,24 +98,48 @@ async def generateResponse(requestBody: AIRequestBody) -> List[AIResponseBody]:
             response=response_content,
         )
         last_response_id = await database.execute(llm_grader_insert_query)
-        
-        sql = text(f"""SELECT llm_grader.*, content_prompt.*, system_prompt.*, ai_model.*
+
+        sql = text(
+            f"""SELECT llm_grader.*, content_prompt.*, system_prompt.*, ai_model.*
                 FROM llm_grader
                 JOIN content_prompt ON content_prompt.id = {content_prompt_id}
                 JOIN system_prompt ON system_prompt.id = {system_prompt_id}
                 JOIN ai_model ON ai_model.id = {ai_model_id}
-                WHERE llm_grader.id = {last_response_id}""")
+                WHERE llm_grader.id = {last_response_id}"""
+        )
         inserted_response = await database.fetch_one(sql)
-        
+
         dict_result = dict(inserted_response)
-        
+
         responseInstance = AIResponseBody(
             systemPrompt=dict_result.get("systemPrompt"),
             contentPrompt=dict_result.get("contentPrompt"),
             response=dict_result.get("response"),
-            aiModel=dict_result.get("aiModel")
-            )
-        print(responseInstance)
+            aiModel=dict_result.get("aiModel"),
+        )
         responseData.append(responseInstance)
-        
+
     return responseData
+
+
+async def getSystemPrompts() -> List[DataSystemPromptResponseBody]:
+    """
+    Returns:
+        List[DataSystemPromptResponseBody]: SystemPrompts with its id
+    """
+
+    system_promptResponse = system_prompt.select()
+    responses = await database.fetch_all(system_promptResponse)
+
+    output: List[DataSystemPromptResponseBody] = []
+    for response in responses:
+        response_dict = dict(response)
+        print(response_dict)
+        output.append(
+            DataSystemPromptResponseBody(
+                id =response_dict.get("id"),
+                systemPrompt=response_dict.get("systemPrompt"),
+            )
+        )
+
+    return output
