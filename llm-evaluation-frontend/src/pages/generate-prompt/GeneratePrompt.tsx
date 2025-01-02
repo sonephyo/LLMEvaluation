@@ -1,11 +1,12 @@
 import axios from "axios";
-import { SetStateAction, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { BACKEND_URL } from "../../config/config";
 import {
   LLMResponse,
   PromptInterface,
   ResultResponesInterface,
 } from "../../interface/interface";
+import Markdown from "react-markdown";
 
 interface PopUpExistingInterface {
   isOpen: boolean;
@@ -23,6 +24,15 @@ export const GeneratePrompt = () => {
       isOpen: false,
       selectedSystemPrompt: null,
     });
+
+  useEffect(() => {
+    if (popUpExistingPrompt.selectedSystemPrompt != null) {
+      setFormData({
+        systemPrompt: popUpExistingPrompt.selectedSystemPrompt,
+        contentPrompt: "",
+      });
+    }
+  }, [popUpExistingPrompt.selectedSystemPrompt]);
 
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { id, value } = event.target;
@@ -53,6 +63,7 @@ export const GeneratePrompt = () => {
         console.error(error);
       });
   };
+
   return (
     <div className="flex justify-center flex-col items-center ">
       <form onSubmit={handleSubmit} className="mb-5 w-1/2">
@@ -105,10 +116,9 @@ export const GeneratePrompt = () => {
         </button>
       </form>
       {response && <ResultResponse data={response} />}
-      <PopUpExistingPrompts
-        isOpen={popUpExistingPrompt.isOpen}
-        setPopUpExistingPrompt={setpopUpExistingPrompt}
-      />
+      {popUpExistingPrompt.isOpen && (
+        <PopUpExistingPrompts setPopUpExistingPrompt={setpopUpExistingPrompt} />
+      )}
     </div>
   );
 };
@@ -124,7 +134,7 @@ const ResultResponse: React.FC<ResultResponesInterface> = (props) => {
             key={index}
           >
             <h1 className=" text-3xl mb-3">{result.aiModel}</h1>
-            <p>{result.response}</p>
+            <Markdown>{result.response}</Markdown>
           </div>
         ))}
       </div>
@@ -138,7 +148,6 @@ interface systemPromptInterface {
 }
 
 const PopUpExistingPrompts = (props: {
-  isOpen: boolean;
   setPopUpExistingPrompt: React.Dispatch<
     React.SetStateAction<PopUpExistingInterface>
   >;
@@ -149,7 +158,6 @@ const PopUpExistingPrompts = (props: {
 
   useEffect(() => {
     axios.get(`${BACKEND_URL}/ai/systemPrompts`).then((res) => {
-      console.log(res.data)
       setsystemPrompts(res.data);
     });
 
@@ -162,9 +170,7 @@ const PopUpExistingPrompts = (props: {
     <div
       id="info-popup"
       tabIndex={1}
-      className={`${
-        props.isOpen ? "block" : "hidden"
-      } absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 shadow-md rounded-lg`}
+      className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 shadow-md rounded-lg`}
     >
       <div className="relative p-4 w-full h-full md:h-auto">
         <div className="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 md:p-8">
@@ -180,12 +186,39 @@ const PopUpExistingPrompts = (props: {
             >
               <img src="/cross-white.svg" alt="X" />
             </span>
-              {systemPrompts?.map((item) => (
-                <div key={item.id}>
-                  <p>{item.id}</p>
-                  <p>{item.systemPrompt}</p>
-                </div>
-              ))}
+            <table className="table-auto border-collapse border border-gray-300 w-full">
+              <thead className="bg-slate-700">
+                <tr>
+                  <th className="px-4 py-2">System Prompt</th>
+                  <th className="px-4 py-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {systemPrompts &&
+                  systemPrompts.map((item, index) => (
+                    <tr
+                      className={`dark:bg-gray-800 dark:text-white`}
+                      key={index}
+                    >
+                      <td className=" px-4 line-clamp-2">
+                        {item.systemPrompt}
+                      </td>
+                      <td className="px-4 py-2">
+                        <button
+                          onClick={() => {
+                            props.setPopUpExistingPrompt({
+                              isOpen: false,
+                              selectedSystemPrompt: item.systemPrompt,
+                            });
+                          }}
+                        >
+                          Select
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
