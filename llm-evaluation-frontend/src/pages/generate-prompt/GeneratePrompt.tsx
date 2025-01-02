@@ -1,21 +1,15 @@
 import axios from "axios";
-import { useState } from "react";
+import { SetStateAction, useEffect, useState } from "react";
 import { BACKEND_URL } from "../../config/config";
+import {
+  LLMResponse,
+  PromptInterface,
+  ResultResponesInterface,
+} from "../../interface/interface";
 
-interface PromptInterface {
-  systemPrompt: string;
-  contentPrompt: string;
-}
-
-interface ResultResponesInterface {
-  data: LLMResponse[];
-}
-
-interface LLMResponse {
-  systemPrompt: string;
-  response: string;
-  contentPrompt: string;
-  aiModel: string;
+interface PopUpExistingInterface {
+  isOpen: boolean;
+  selectedSystemPrompt: string | null;
 }
 
 export const GeneratePrompt = () => {
@@ -24,6 +18,11 @@ export const GeneratePrompt = () => {
     contentPrompt: "",
   });
   const [response, setresponse] = useState<LLMResponse[] | null>(null);
+  const [popUpExistingPrompt, setpopUpExistingPrompt] =
+    useState<PopUpExistingInterface>({
+      isOpen: false,
+      selectedSystemPrompt: null,
+    });
 
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { id, value } = event.target;
@@ -58,12 +57,25 @@ export const GeneratePrompt = () => {
     <div className="flex justify-center flex-col items-center ">
       <form onSubmit={handleSubmit} className="mb-5 w-1/2">
         <div className="my-10">
-          <label
-            htmlFor="systemPrompt"
-            className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-          >
-            System Prompt - Input what you want the LLM to know
-          </label>
+          <div className="mb-2 text-sm flex flex-row gap-3">
+            <label
+              htmlFor="systemPrompt"
+              className="block font-medium text-gray-900 dark:text-white"
+            >
+              System Prompt - Input what you want the LLM to know
+            </label>
+            <div className="dark:text-white">
+              <p
+                className="underline cursor-pointer"
+                onClick={() => {
+                  console.log("clicked");
+                  setpopUpExistingPrompt((prev) => ({ ...prev, isOpen: true }));
+                }}
+              >
+                Existing Responses
+              </p>
+            </div>
+          </div>
           <textarea
             id="systemPrompt"
             value={formData.systemPrompt}
@@ -76,7 +88,7 @@ export const GeneratePrompt = () => {
             htmlFor="contentPrompt"
             className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
           >
-            Content Prompt
+            Content Prompt - Test Cases against the System Prompt
           </label>
           <textarea
             id="contentPrompt"
@@ -93,6 +105,10 @@ export const GeneratePrompt = () => {
         </button>
       </form>
       {response && <ResultResponse data={response} />}
+      <PopUpExistingPrompts
+        isOpen={popUpExistingPrompt.isOpen}
+        setPopUpExistingPrompt={setpopUpExistingPrompt}
+      />
     </div>
   );
 };
@@ -111,6 +127,67 @@ const ResultResponse: React.FC<ResultResponesInterface> = (props) => {
             <p>{result.response}</p>
           </div>
         ))}
+      </div>
+    </div>
+  );
+};
+
+interface systemPromptInterface {
+  id: number;
+  systemPrompt: string;
+}
+
+const PopUpExistingPrompts = (props: {
+  isOpen: boolean;
+  setPopUpExistingPrompt: React.Dispatch<
+    React.SetStateAction<PopUpExistingInterface>
+  >;
+}) => {
+  const [systemPrompts, setsystemPrompts] = useState<
+    systemPromptInterface[] | null
+  >(null);
+
+  useEffect(() => {
+    axios.get(`${BACKEND_URL}/ai/systemPrompts`).then((res) => {
+      console.log(res.data)
+      setsystemPrompts(res.data);
+    });
+
+    return () => {
+      setsystemPrompts(null);
+    };
+  }, []);
+
+  return (
+    <div
+      id="info-popup"
+      tabIndex={1}
+      className={`${
+        props.isOpen ? "block" : "hidden"
+      } absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 shadow-md rounded-lg`}
+    >
+      <div className="relative p-4 w-full h-full md:h-auto">
+        <div className="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 md:p-8">
+          <div className="mb-4 text-sm font-light text-gray-500 dark:text-gray-400">
+            <span
+              className="bg-slate-700 rounded-full flex items-center justify-center text-3xl font-bold uppercase absolute -right-4 -top-4 w-10 h-10 text-white hover:bg-blue-200 hover:duration-200 cursor-pointer"
+              onClick={() => {
+                props.setPopUpExistingPrompt((prev) => ({
+                  ...prev,
+                  isOpen: false,
+                }));
+              }}
+            >
+              <img src="/cross-white.svg" alt="X" />
+            </span>
+              {systemPrompts?.map((item) => (
+                <div key={item.id}>
+                  <p>{item.id}</p>
+                  <p>{item.systemPrompt}</p>
+                </div>
+              ))}
+          </div>
+        </div>
       </div>
     </div>
   );
