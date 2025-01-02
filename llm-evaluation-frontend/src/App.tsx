@@ -1,15 +1,16 @@
 import "./App.css";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate, useOutlet } from "react-router-dom";
 
 function App() {
   // const [isPopUpOpen, setisPopUpOpen] = useState<boolean>(false);
+  const outlet = useOutlet();
 
   return (
     <div className="">
       <SideBar />
       <div>
         <div className=" min-h-screen p-4 sm:ml-64 bg-slate-900">
-          <Outlet />
+          {outlet || <MainPage />}
         </div>
       </div>
     </div>
@@ -92,6 +93,17 @@ export const SideBar = () => {
         </div>
       </aside>
     </>
+  );
+};
+
+const MainPage = () => {
+  return (
+    <div className="flex flex-col items-center justify-center h-screen dark:text-white">
+      <h2 className=" text-5xl">Welcome to LLM Evlauation</h2>
+      <p>
+        Programmed by <a href="https://github.com/sonephyo" className="underline" target="_blank">Soney</a>
+      </p>
+    </div>
   );
 };
 
