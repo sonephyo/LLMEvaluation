@@ -99,7 +99,7 @@ export const SideBar = () => {
 const MainPage = () => {
   return (
     <div className="flex flex-col items-center justify-center h-screen dark:text-white">
-      <h2 className=" text-5xl">Welcome to LLM Evlauation</h2>
+      <h2 className=" text-5xl">Welcome to LLM Evaluation</h2>
       <p>
         Programmed by <a href="https://github.com/sonephyo" className="underline" target="_blank">Soney</a>
       </p>
