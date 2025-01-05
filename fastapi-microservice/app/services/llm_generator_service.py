@@ -15,6 +15,9 @@ from app.models.classes import (
     AIResponseBody,
     DataSystemPromptResponseBody,
 )
+from app.services.llm_evaluator_service import (
+    evaluateResponse
+)
 
 # loading variables from .env file
 load_dotenv()
@@ -23,6 +26,7 @@ groq_key = os.getenv("GROQ_API_KEY")
 
 client = Groq(
     api_key=groq_key,
+    
 )
 
 
@@ -110,6 +114,8 @@ async def generateResponse(requestBody: AIRequestBody) -> List[AIResponseBody]:
         inserted_response = await database.fetch_one(sql)
 
         dict_result = dict(inserted_response)
+        
+        evaluateResponse(dict_result)
 
         responseInstance = AIResponseBody(
             systemPrompt=dict_result.get("systemPrompt"),
@@ -134,7 +140,6 @@ async def getSystemPrompts() -> List[DataSystemPromptResponseBody]:
     output: List[DataSystemPromptResponseBody] = []
     for response in responses:
         response_dict = dict(response)
-        print(response_dict)
         output.append(
             DataSystemPromptResponseBody(
                 id =response_dict.get("id"),

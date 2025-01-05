@@ -1,5 +1,7 @@
+from collections import defaultdict
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+import time
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from groq import BaseModel, Groq
 import os
@@ -17,19 +19,6 @@ client = Groq(
     api_key=groq_key,
 )
 
-# Classes for request body
-class AIRequestBody(BaseModel):
-    systemPrompt: str | None = (
-        "you are a funny person and you explain stuff in a fun way"
-    )
-    contentPrompt: str | None = {
-        "explain suny oswego"
-    }
-
-class AIResponseBody(BaseModel):
-    systemPrompt: str | None = None
-    contentPrompt: str | None = None
-    response: str | None = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,23 +28,56 @@ async def lifespan(app: FastAPI):
     # Clean up the ML models and release the resources
     await database.disconnect()
 
+
 app = FastAPI(lifespan=lifespan)
 
-origins = [
-    "http://localhost:5173",
-    "http://localhost:4173"
-]
+origins = ["http://localhost:5173", "http://localhost:4173"]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
+
+rate_limits = defaultdict(list)
+MAX_REQUESTS = 1
+TIME_WINDOW = 60
+
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    print("ahsd;kljfh;askdjf", request.url.path)
+    if request.url.path == "/ai/" and request.method == "POST":
+        client_ip = request.client.host
+        current_time = time.time()
+
+        # Initialize rate limits for the client IP if not already set
+        if client_ip not in rate_limits:
+            rate_limits[client_ip] = []
+
+        # Remove expired timestamps
+        rate_limits[client_ip] = [
+            timestamp
+            for timestamp in rate_limits[client_ip]
+            if current_time - timestamp < TIME_WINDOW
+        ]
+
+        # Check if the request exceeds the rate limit
+        if len(rate_limits[client_ip]) >= MAX_REQUESTS:
+            raise HTTPException(status_code=429, detail="Too many requests")
+
+        # Allow the request
+        rate_limits[client_ip].append(current_time)
+
+    response = await call_next(request)
+    return response
+
 
 app.include_router(llm_generator_router)
 app.include_router(llm_data_storage_router)
+
 
 @app.get("/")
 def read_root():
